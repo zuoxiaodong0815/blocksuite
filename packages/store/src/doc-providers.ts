@@ -2,7 +2,7 @@ import type * as Y from 'yjs';
 import { WebrtcProvider } from 'y-webrtc';
 import { IndexeddbPersistence } from 'y-indexeddb';
 import type { Awareness } from 'y-protocols/awareness';
-import { WebsocketProvider as OriginWebsocketProvider } from 'y-websocket';
+import { WebsocketProvider as OriginWebsocketProvider } from './websocket';
 
 /**
  * Different examples of providers could include webrtc sync,
