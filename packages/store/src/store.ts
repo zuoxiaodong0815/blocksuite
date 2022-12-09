@@ -5,6 +5,7 @@ import * as Y from 'yjs';
 import type { DocProvider, DocProviderConstructor } from './doc-providers';
 import { serializeYDoc, yDocToJSXNode } from './utils/jsx';
 import { uuidv4 } from './utils/id-generator';
+import { WebsocketProvider } from './websocket';
 
 export interface SerializedStore {
   [key: string]: {
@@ -41,6 +42,16 @@ export class Store {
       ProviderConstructor =>
         new ProviderConstructor(room, this.doc, { awareness: this.awareness })
     );
+
+    const websocket = this.providers.find(
+      item => item instanceof WebsocketProvider
+    ) as WebsocketProvider | undefined;
+    websocket &&
+      this.doc.on('subdocs', ({ added, removed, loaded }) => {
+        loaded.forEach((subdoc: Y.Doc) => {
+          websocket.addSubdoc(subdoc);
+        });
+      });
   }
 
   addSpace(space: Space) {

@@ -41,6 +41,7 @@ export class EditorContainer extends LitElement {
   update(changedProperties: Map<string, unknown>) {
     if (changedProperties.has('page')) {
       this.placeholderModel = new BlockSchema['affine:page'](this.page, {});
+      this._subscribeStore();
     }
     super.update(changedProperties);
   }

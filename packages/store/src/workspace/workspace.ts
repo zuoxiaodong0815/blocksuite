@@ -122,9 +122,17 @@ export class Workspace {
       typeof BaseBlockModel
     >
   >(pageId: string, title = '') {
+    let subdoc = this.doc.getMap().get(pageId) as Y.Doc;
+    if (!subdoc) {
+      subdoc = new Y.Doc();
+      subdoc.guid = pageId;
+      this.doc.getMap().set(pageId, subdoc);
+    }
+    subdoc.load();
+
     const page = new Page<IBlockSchema>(
       'space:' + pageId,
-      this.doc,
+      subdoc,
       this._store.awareness,
       this._store.idGenerator
     );
@@ -132,6 +140,14 @@ export class Workspace {
     this.meta.addPage({ id: pageId, title, favorite: false, trash: false });
     this._indexer.onCreatePage(page.id);
     return page;
+  }
+
+  getPage(pageId: string, title = '') {
+    const page = this._store.spaces.get('space:' + pageId) as Page;
+    if (page) {
+      return page;
+    }
+    return null;
   }
 
   setPage(pageId: string, props: Partial<PageMeta>) {

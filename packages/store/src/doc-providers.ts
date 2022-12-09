@@ -90,7 +90,7 @@ export function createWebsocketDocProvider(url: string) {
       ydoc: Y.Doc,
       options?: { awareness?: Awareness }
     ) {
-      super(url, room, ydoc, options);
+      super(url, room || ydoc.guid, ydoc, options);
     }
 
     public clearData() {

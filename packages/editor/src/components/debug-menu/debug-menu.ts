@@ -226,8 +226,8 @@ export class DebugMenu extends LitElement {
     .debug-menu {
       display: flex;
       flex-wrap: wrap;
-      position: fixed;
-      top: 0;
+      /* position: fixed; */
+      top: 50px;
       left: 0;
       width: 100%;
       z-index: 1000; /* for debug visibility */
