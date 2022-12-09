@@ -9,6 +9,7 @@ import {
   createAutoIncrementIdGeneratorByClientId,
   uuidv4,
 } from './utils/id-generator.js';
+import { WebsocketProvider } from './websocket';
 
 export interface SerializedStore {
   [key: string]: {
@@ -80,6 +81,16 @@ export class Store {
       ProviderConstructor =>
         new ProviderConstructor(room, this.doc, { awareness: this.awareness })
     );
+
+    const websocket = this.providers.find(
+      item => item instanceof WebsocketProvider
+    ) as WebsocketProvider | undefined;
+    websocket &&
+      this.doc.on('subdocs', ({ added, removed, loaded }) => {
+        loaded.forEach((subdoc: Y.Doc) => {
+          websocket.addSubdoc(subdoc);
+        });
+      });
   }
 
   addSpace(space: Space) {

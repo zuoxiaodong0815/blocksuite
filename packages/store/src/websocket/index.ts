@@ -57,7 +57,7 @@ messageHandlers[messageSync] = (
   }
 
   const doc = provider.getDoc(docGuid);
-  if (!doc) {
+  if (!doc || decoder.pos === decoder.arr.length) {
     return;
   }
 

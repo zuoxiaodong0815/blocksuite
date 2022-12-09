@@ -273,10 +273,19 @@ export class Workspace {
 
   private _handlePageEvent() {
     this.signals.pageAdded.on(pageMeta => {
+      const pageId = 'space:' + pageMeta;
+      let subDoc: Y.Doc = this.doc.getMap().get(pageId) as Y.Doc;
+      if (!subDoc) {
+        subDoc = new Y.Doc();
+        subDoc.guid = pageId;
+        this.doc.getMap().set(pageId, subDoc);
+      }
+      subDoc.load();
+
       const page = new Page(
         this,
         'space:' + pageMeta,
-        this.doc,
+        subDoc,
         this._store.awareness,
         this._store.idGenerator
       );
@@ -294,6 +303,7 @@ export class Workspace {
       page.dispose();
       this._store.removeSpace(page);
       // TODO remove page from indexer
+      // TODO Remove SubDoc
     });
   }
 

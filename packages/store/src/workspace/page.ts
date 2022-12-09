@@ -87,6 +87,17 @@ export class Page extends Space {
     return this.workspace.blobs;
   }
 
+  init() {
+    const visited = new Set<string>();
+    this._yBlocks.forEach((value, id) => {
+      if (!visited.has(id)) {
+        visited.add(id);
+        this._handleYBlockAdd(visited, id);
+      }
+    });
+    return this;
+  }
+
   get pageId() {
     return this.id.replace('space:', '');
   }
