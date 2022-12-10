@@ -15,6 +15,7 @@ import {
   toBlockProps,
   matchFlavours,
 } from '../utils/utils';
+import type { YMultiDocUndoManager } from 'y-utility/y-multidoc-undomanager';
 
 export type YBlock = Y.Map<unknown>;
 export type YBlocks = Y.Map<YBlock>;
@@ -44,7 +45,7 @@ export class Page<
   IBlockSchema extends Record<string, typeof BaseBlockModel> = any
 > extends Space<IBlockSchema> {
   private _idGenerator: IdGenerator;
-  private _history: Y.UndoManager;
+  private _history: YMultiDocUndoManager;
   private _root: BaseBlockModel | null = null;
   private _flavourMap = new Map<string, IBlockSchema[keyof IBlockSchema]>();
   private _blockMap = new Map<
@@ -74,6 +75,7 @@ export class Page<
     id: string,
     doc: Y.Doc,
     awareness: Awareness,
+    _history: YMultiDocUndoManager,
     idGenerator: IdGenerator = uuidv4
   ) {
     super(id, doc, awareness);
@@ -88,10 +90,13 @@ export class Page<
     // this._yBlocks.unobserveDeep(this._handleYEvents);
     this._yBlocks.observeDeep(this._handleYEvents);
 
-    this._history = new Y.UndoManager([this._yBlocks], {
-      trackedOrigins: new Set([this.doc.clientID]),
-      doc: this.doc,
-    });
+    this._history = _history;
+    this._history.addToScope(this._yBlocks);
+    this._history.addTrackedOrigin(this.doc.clientID);
+    // new Y.UndoManager([this._yBlocks], {
+    //   trackedOrigins: new Set([this.doc.clientID]),
+    //   doc: this.doc,
+    // });
 
     this._history.on('stack-cleared', this._historyObserver);
     this._history.on('stack-item-added', this._historyAddObserver);

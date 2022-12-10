@@ -6,6 +6,7 @@ import { Signal } from '../utils/signal';
 import { Indexer, QueryContent } from './search';
 import type { BaseBlockModel } from '../base';
 import type { Awareness } from 'y-protocols/awareness';
+import { YMultiDocUndoManager } from 'y-utility/y-multidoc-undomanager';
 
 export interface PageMeta {
   id: string;
@@ -82,6 +83,7 @@ class WorkspaceMeta extends Space {
 export class Workspace {
   private _store: Store;
   private _indexer: Indexer;
+  private _history: YMultiDocUndoManager;
 
   meta: WorkspaceMeta;
 
@@ -114,6 +116,7 @@ export class Workspace {
     this.signals = {
       pagesUpdated: this.meta.pagesUpdated,
     };
+    this._history = new YMultiDocUndoManager();
   }
 
   createPage<
@@ -134,11 +137,13 @@ export class Workspace {
       'space:' + pageId,
       subdoc,
       this._store.awareness,
+      this._history,
       this._store.idGenerator
     );
     this._store.addSpace(page);
     this.meta.addPage({ id: pageId, title, favorite: false, trash: false });
     this._indexer.onCreatePage(page.id);
+    this._history.clear();
     return page;
   }
 

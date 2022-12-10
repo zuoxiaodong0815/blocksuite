@@ -111,6 +111,7 @@ importers:
       sha3: ^2.1.4
       y-indexeddb: ^9.0.9
       y-protocols: ^1.0.5
+      y-utility: ^0.1.2
       y-webrtc: ^10.2.3
       y-websocket: ^1.4.5
       yjs: ^13.5.41
@@ -123,6 +124,7 @@ importers:
       sha3: 2.1.4
       y-indexeddb: 9.0.9_yjs@13.5.41
       y-protocols: 1.0.5
+      y-utility: 0.1.2_yjs@13.5.41
       y-webrtc: 10.2.3
       y-websocket: 1.4.5_yjs@13.5.41
       yjs: 13.5.41
@@ -4386,6 +4388,16 @@ packages:
     resolution: {integrity: sha512-Wil92b7cGk712lRHDqS4T90IczF6RkcvCwAD0A2OPg+adKmOe+nOiT/N2hvpQIWS3zfjmtL4CPaH5sIW1Hkm/A==}
     dependencies:
       lib0: 0.2.52
+    dev: false
+
+  /y-utility/0.1.2_yjs@13.5.41:
+    resolution: {integrity: sha512-ntbFDmLlm790NEXwo38CU50pAYSdcmDIRBw3PZNPq6OGTGogHiq2sVc63h78lcnb+kED0wnUQepUGZXevgFshA==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      yjs: ^13.5.29
+    dependencies:
+      lib0: 0.2.52
+      yjs: 13.5.41
     dev: false
 
   /y-webrtc/10.2.3:

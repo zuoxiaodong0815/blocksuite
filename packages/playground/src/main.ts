@@ -121,6 +121,9 @@ function refreshPagelist(workspace: Workspace) {
   if (pagelistEle) {
     pagelistEle.innerHTML = options;
   }
+  if (!editor && workspace.doc.getMap().size > 0) {
+    switchPage(workspace.doc.getMap().keys().next().value, workspace);
+  }
 }
 
 function initPageMenu(
@@ -144,9 +147,9 @@ function initPageMenu(
   menuPontainer.appendChild(selectContainer);
 
   refreshPagelist(workspace);
-  // workspace.doc.on('subdocs', ({ added, removed, loaded }) => {
-  //   refreshPagelist(workspace);
-  // });
+  workspace.doc.on('subdocs', ({ added, removed, loaded }) => {
+    refreshPagelist(workspace);
+  });
 }
 
 window.onload = () => {
