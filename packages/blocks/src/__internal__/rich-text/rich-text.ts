@@ -117,6 +117,7 @@ export class RichText extends LitElement {
           }
         }
       }
+      page.awareness.updateRemoteSelect(model.id);
     });
   }
 
