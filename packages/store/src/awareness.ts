@@ -16,8 +16,18 @@ interface UserInfo {
   color: string;
 }
 
+interface BlockSelection {
+  type: 'none' | 'cursor' | 'all' | 'range';
+  anchor: RelativePosition;
+  focus: RelativePosition;
+}
+
+export interface SelectionRangeInfo {
+  [key: string]: BlockSelection;
+}
+
 interface AwarenessState {
-  cursor?: SelectionRange;
+  select?: SelectionRangeInfo;
   user: UserInfo;
 }
 
@@ -35,6 +45,8 @@ export class AwarenessAdapter {
     update: new Signal<AwarenessMessage>(),
   };
 
+  private _selectionRanges: { [id: string]: AwarenessState } = {};
+
   constructor(space: Space, awareness: Awareness) {
     this.space = space;
     this.awareness = awareness;
@@ -43,13 +55,28 @@ export class AwarenessAdapter {
   }
 
   public setLocalCursor(range: SelectionRange) {
-    this.awareness.setLocalStateField('cursor', range);
+    const select: SelectionRangeInfo = {
+      [range.id]: {
+        type: 'cursor',
+        anchor: range.anchor,
+        focus: range.focus,
+      },
+    };
+    this.awareness.setLocalStateField('select', select);
   }
 
   public getLocalCursor(): SelectionRange | undefined {
     const states = this.awareness.getStates();
     const awarenessState = states.get(this.awareness.clientID);
-    return awarenessState?.cursor;
+    const select = awarenessState?.select as SelectionRangeInfo;
+    if (select) {
+      const id = Object.keys(select)[0];
+      return {
+        id,
+        ...select[id],
+      };
+    }
+    return undefined;
   }
 
   public getStates(): Map<number, AwarenessState> {
@@ -90,43 +117,64 @@ export class AwarenessAdapter {
     if (awMsg.id === this.awareness.clientID) {
       this.updateLocalCursor();
     } else {
-      this._resetRemoteCursor();
+      this._resetRemoteCursor(
+        awMsg.id,
+        awMsg.state,
+        this._selectionRanges[awMsg.id]
+      );
+    }
+
+    if (awMsg.state) {
+      this._selectionRanges[awMsg.id] = awMsg.state;
+    } else {
+      delete this._selectionRanges[awMsg.id];
     }
   };
 
-  private _resetRemoteCursor() {
-    this.space.richTextAdapters.forEach(textAdapter =>
-      textAdapter.quillCursors.clearCursors()
-    );
-    this.getStates().forEach((awState, clientId) => {
-      if (clientId !== this.awareness.clientID && awState.cursor) {
-        const anchor = Y.createAbsolutePositionFromRelativePosition(
-          awState.cursor.anchor,
-          this.space.doc
-        );
-        const focus = Y.createAbsolutePositionFromRelativePosition(
-          awState.cursor.focus,
-          this.space.doc
-        );
-        const textAdapter = this.space.richTextAdapters.get(
-          awState.cursor.id || ''
-        );
-        if (anchor && focus && textAdapter) {
-          const user = awState.user || {};
-          const color = user.color || '#ffa500';
-          const name = user.name || 'other';
-          textAdapter.quillCursors.createCursor(
-            clientId.toString(),
-            name,
-            color
-          );
-          textAdapter.quillCursors.moveCursor(clientId.toString(), {
-            index: anchor.index,
-            length: focus.index - anchor.index,
-          });
-        }
-      }
+  private _resetRemoteCursor(
+    clientId: number,
+    awState: AwarenessState | undefined,
+    oldAwState: AwarenessState | undefined
+  ) {
+    const update = Object.keys(oldAwState?.select || {});
+    update.push(...Object.keys(awState?.select || {}));
+    new Set(update).forEach(blockId => {
+      this._updateRemoteCursor(clientId, blockId, awState);
     });
+  }
+
+  private _updateRemoteCursor(
+    clientId: number,
+    blockId: string,
+    awState: AwarenessState | undefined
+  ) {
+    const textAdapter = this.space.richTextAdapters.get(blockId);
+    if (!textAdapter) {
+      return;
+    }
+    const select: BlockSelection = (awState?.select || {})[blockId];
+    if (!awState || !select) {
+      textAdapter?.quillCursors.removeCursor(clientId.toString());
+      return;
+    }
+    const anchor = Y.createAbsolutePositionFromRelativePosition(
+      select.anchor,
+      this.space.doc
+    );
+    const focus = Y.createAbsolutePositionFromRelativePosition(
+      select.focus,
+      this.space.doc
+    );
+    if (anchor && focus && textAdapter) {
+      const user = awState.user || {};
+      const color = user.color || '#ffa500';
+      const name = user.name || 'other';
+      textAdapter.quillCursors.createCursor(clientId.toString(), name, color);
+      textAdapter.quillCursors.moveCursor(clientId.toString(), {
+        index: anchor.index,
+        length: focus.index - anchor.index,
+      });
+    }
   }
 
   public updateLocalCursor() {
@@ -146,6 +194,14 @@ export class AwarenessAdapter {
       const textAdapter = this.space.richTextAdapters.get(localCursor.id || '');
       textAdapter?.quill.setSelection(anchor.index, focus.index - anchor.index);
     }
+  }
+
+  public updateRemoteSelect(blockId: string) {
+    this.getStates().forEach((awState, clientId) => {
+      if (clientId !== this.awareness.clientID) {
+        this._updateRemoteCursor(clientId, blockId, awState);
+      }
+    });
   }
 
   destroy() {
