@@ -4,10 +4,14 @@ import type { Awareness } from 'y-protocols/awareness.js';
 import type { Space } from './space';
 import { Signal } from './utils/signal';
 
-export interface SelectionRange {
+export interface AbsoluteBlockSelection {
   id: string;
-  anchor: RelativePosition;
-  focus: RelativePosition;
+  startPos?: number;
+  endPos?: number;
+}
+export interface AbsoluteSelection {
+  type: string;
+  blocks: AbsoluteBlockSelection[];
 }
 
 interface UserInfo {
@@ -17,9 +21,9 @@ interface UserInfo {
 }
 
 interface BlockSelection {
-  type: 'none' | 'cursor' | 'all' | 'range';
-  anchor: RelativePosition;
-  focus: RelativePosition;
+  type: string;
+  anchor?: RelativePosition;
+  focus?: RelativePosition;
 }
 
 export interface SelectionRangeInfo {
@@ -54,29 +58,14 @@ export class AwarenessAdapter {
     this.signals.update.on(this._onAwarenessMessage);
   }
 
-  public setLocalCursor(range: SelectionRange) {
-    const select: SelectionRangeInfo = {
-      [range.id]: {
-        type: 'cursor',
-        anchor: range.anchor,
-        focus: range.focus,
-      },
-    };
+  public setLocalCursor(select: SelectionRangeInfo) {
     this.awareness.setLocalStateField('select', select);
   }
 
-  public getLocalCursor(): SelectionRange | undefined {
+  public getLocalCursor(): SelectionRangeInfo | undefined {
     const states = this.awareness.getStates();
     const awarenessState = states.get(this.awareness.clientID);
-    const select = awarenessState?.select as SelectionRangeInfo;
-    if (select) {
-      const id = Object.keys(select)[0];
-      return {
-        id,
-        ...select[id],
-      };
-    }
-    return undefined;
+    return awarenessState?.select;
   }
 
   public getStates(): Map<number, AwarenessState> {
@@ -157,23 +146,25 @@ export class AwarenessAdapter {
       textAdapter?.quillCursors.removeCursor(clientId.toString());
       return;
     }
-    const anchor = Y.createAbsolutePositionFromRelativePosition(
-      select.anchor,
-      this.space.doc
-    );
-    const focus = Y.createAbsolutePositionFromRelativePosition(
-      select.focus,
-      this.space.doc
-    );
-    if (anchor && focus && textAdapter) {
-      const user = awState.user || {};
-      const color = user.color || '#ffa500';
-      const name = user.name || 'other';
-      textAdapter.quillCursors.createCursor(clientId.toString(), name, color);
-      textAdapter.quillCursors.moveCursor(clientId.toString(), {
-        index: anchor.index,
-        length: focus.index - anchor.index,
-      });
+    if (select.type !== 'Block' && select.anchor && select.focus) {
+      const anchor = Y.createAbsolutePositionFromRelativePosition(
+        select.anchor,
+        this.space.doc
+      );
+      const focus = Y.createAbsolutePositionFromRelativePosition(
+        select.focus,
+        this.space.doc
+      );
+      if (anchor && focus && textAdapter) {
+        const user = awState.user || {};
+        const color = user.color || '#ffa500';
+        const name = user.name || 'other';
+        textAdapter.quillCursors.createCursor(clientId.toString(), name, color);
+        textAdapter.quillCursors.moveCursor(clientId.toString(), {
+          index: anchor.index,
+          length: focus.index - anchor.index,
+        });
+      }
     }
   }
 
@@ -182,18 +173,28 @@ export class AwarenessAdapter {
     if (!localCursor) {
       return;
     }
-    const anchor = Y.createAbsolutePositionFromRelativePosition(
-      localCursor.anchor,
-      this.space.doc
-    );
-    const focus = Y.createAbsolutePositionFromRelativePosition(
-      localCursor.focus,
-      this.space.doc
-    );
-    if (anchor && focus) {
-      const textAdapter = this.space.richTextAdapters.get(localCursor.id || '');
-      textAdapter?.quill.setSelection(anchor.index, focus.index - anchor.index);
-    }
+    // todo multi-block
+    Object.keys(localCursor).length === 1 &&
+      Object.keys(localCursor).forEach(blockId => {
+        const sel = localCursor[blockId];
+        if (sel && sel.anchor && sel.focus) {
+          const anchor = Y.createAbsolutePositionFromRelativePosition(
+            sel.anchor,
+            this.space.doc
+          );
+          const focus = Y.createAbsolutePositionFromRelativePosition(
+            sel.focus,
+            this.space.doc
+          );
+          if (anchor && focus) {
+            const textAdapter = this.space.richTextAdapters.get(blockId || '');
+            textAdapter?.quill.setSelection(
+              anchor.index,
+              focus.index - anchor.index
+            );
+          }
+        }
+      });
   }
 
   public updateRemoteSelect(blockId: string) {
