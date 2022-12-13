@@ -62,7 +62,7 @@ messageHandlers[messageSync] = (
   }
 
   encoding.writeVarUint(encoder, messageSync);
-  hasGuid && encoding.writeVarString(encoder, docGuid);
+  encoding.writeVarString(encoder, docGuid);
   const syncMessageType = syncProtocol.readSyncMessage(
     decoder,
     encoder,

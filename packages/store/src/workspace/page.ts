@@ -22,6 +22,7 @@ import {
 } from '../utils/utils.js';
 import type { PageMeta, Workspace } from './workspace.js';
 import type { YMultiDocUndoManager } from 'y-utility/y-multidoc-undomanager';
+import type { AbsoluteSelection, SelectionRangeInfo } from '../awareness';
 
 export type YBlock = Y.Map<unknown>;
 export type YBlocks = Y.Map<YBlock>;
@@ -298,13 +299,6 @@ export class Page extends Space {
 
     const adapter = new RichTextAdapter(this, yText, quill);
     this.richTextAdapters.set(id, adapter);
-
-    quill.on('selection-change', () => {
-      const cursor = adapter.getCursor();
-      if (!cursor) return;
-
-      this.awareness.setLocalCursor({ ...cursor, id });
-    });
   }
 
   /** Cancel the connection between the rich text editor instance and YText. */
@@ -573,5 +567,28 @@ export class Page extends Space {
     else {
       this.workspace.meta.validateVersion();
     }
+  }
+
+  public setLocalSelect(select: AbsoluteSelection) {
+    const selectRelativeInfo = {} as SelectionRangeInfo;
+    select.blocks.forEach(blockSel => {
+      if (select.type === 'Block') {
+        selectRelativeInfo[blockSel.id] = {
+          type: select.type,
+        };
+      } else {
+        const relativePos = this.richTextAdapters
+          .get(blockSel.id)
+          ?.getCursor(blockSel.startPos || 0, blockSel.endPos);
+        if (relativePos) {
+          selectRelativeInfo[blockSel.id] = {
+            type: select.type,
+            anchor: relativePos.anchor,
+            focus: relativePos.focus,
+          };
+        }
+      }
+    });
+    this.awareness.setLocalCursor(selectRelativeInfo);
   }
 }

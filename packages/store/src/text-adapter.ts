@@ -372,18 +372,11 @@ export class RichTextAdapter {
     }
   };
 
-  getCursor() {
-    const selection = this.quill.getSelection();
-    if (!selection) {
-      return null;
-    }
-    const anchor = Y.createRelativePositionFromTypeIndex(
-      this.yText,
-      selection.index
-    );
+  getCursor(begin: number, end?: number) {
+    const anchor = Y.createRelativePositionFromTypeIndex(this.yText, begin, -1);
     const focus = Y.createRelativePositionFromTypeIndex(
       this.yText,
-      selection.index + selection.length
+      end === undefined ? this.yText.toJSON().length : end
     );
     return {
       anchor,

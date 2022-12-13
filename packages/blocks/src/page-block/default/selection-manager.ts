@@ -1,4 +1,8 @@
-import type { BaseBlockModel, Page } from '@blocksuite/store';
+import type {
+  BaseBlockModel,
+  Page,
+  AbsoluteBlockSelection,
+} from '@blocksuite/store';
 import type { EmbedBlockComponent } from '../../embed-block/index.js';
 import { showFormatQuickBar } from '../../components/format-quick-bar/index.js';
 import {
@@ -19,6 +23,8 @@ import {
   getDefaultPageBlock,
   isInput,
   IPoint,
+  getSelectInfo,
+  SelectedBlock,
 } from '../../__internal__/index.js';
 import type { RichText } from '../../__internal__/rich-text/rich-text.js';
 import {
@@ -175,6 +181,32 @@ export class DefaultSelectionManager {
       this._onContainerContextMenu
     );
     // this._initListenNativeSelection();
+    this._selectionChangeHandler = this._selectionChangeHandler.bind(this);
+    document.addEventListener('selectionchange', this._selectionChangeHandler);
+  }
+
+  private _selectionChangeHandler() {
+    if (!this.page) {
+      return;
+    }
+    const selInfo = getSelectInfo(this.page);
+    this.page.setLocalSelect({
+      type: selInfo.type,
+      blocks: this._getBlockInfo(selInfo.selectedBlocks),
+    });
+  }
+
+  private _getBlockInfo(blocks: SelectedBlock[]): AbsoluteBlockSelection[] {
+    const result = blocks.reduce((previous, current) => {
+      previous.push({
+        id: current.id,
+        startPos: current.startPos,
+        endPos: current.endPos,
+      });
+      previous.push(...this._getBlockInfo(current.children));
+      return previous;
+    }, [] as AbsoluteBlockSelection[]);
+    return result;
   }
 
   private get _blocks(): BaseBlockModel[] {
@@ -526,6 +558,14 @@ export class DefaultSelectionManager {
     this._signals.updateEmbedEditingState.dispose();
     this._signals.updateEmbedRects.dispose();
     this._mouseDisposeCallback();
+    document.removeEventListener(
+      'selectionchange',
+      this._selectionChangeHandler
+    );
+    document.removeEventListener(
+      'selectionchange',
+      this._selectionChangeHandler
+    );
   }
 
   selectBlockByRect(
