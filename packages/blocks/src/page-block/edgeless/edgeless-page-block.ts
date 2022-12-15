@@ -165,7 +165,8 @@ export class EdgelessPageBlockComponent
   }
 
   update(changedProperties: Map<string, unknown>) {
-    if (changedProperties.has('mouseRoot') && changedProperties.has('page')) {
+    if (changedProperties.has('mouseRoot') || changedProperties.has('page')) {
+      this._selection?.dispose();
       this._selection = new EdgelessSelectionManager(this);
     }
     super.update(changedProperties);

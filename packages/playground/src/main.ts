@@ -55,7 +55,7 @@ function editorOptionsFromParam(): Pick<
         break;
       case 'websocket': {
         const WebsocketDocProvider = createWebsocketDocProvider(
-          'ws://127.0.0.1:1234'
+          'ws://127.0.0.1:3000/collaboration'
         );
         providers.push(WebsocketDocProvider);
         forceUUIDv4 = true;
@@ -100,6 +100,7 @@ function switchPage(pageId: string, workspace: Workspace) {
   editor.model = newpage.getBlockByFlavour(
     'affine:page'
   )[0] as unknown as PageBlockModel;
+  editor.isEmptyPage = !editor.model;
   setTimeout(() => {
     newpage.signals.updated.emit();
     refreshPagelist(workspace);

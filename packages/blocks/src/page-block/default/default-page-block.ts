@@ -313,7 +313,7 @@ export class DefaultPageBlockComponent extends LitElement implements BlockHost {
       { left: number; top: number; width: number; height: number }[]
     >(),
     updateEmbedOption: new Signal<EmbedOption | null>(),
-    nativeSelection: new Signal<boolean>()
+    nativeSelection: new Signal<boolean>(),
   };
 
   private _scrollDisposable!: Disposable;
@@ -601,7 +601,8 @@ export class DefaultPageBlockComponent extends LitElement implements BlockHost {
   }
 
   update(changedProperties: Map<string, unknown>) {
-    if (changedProperties.has('mouseRoot') && changedProperties.has('page')) {
+    if (changedProperties.has('mouseRoot') || changedProperties.has('page')) {
+      this.selection?.dispose();
       this.selection = new DefaultSelectionManager(
         this.page,
         this.mouseRoot,
@@ -625,10 +626,8 @@ export class DefaultPageBlockComponent extends LitElement implements BlockHost {
   // So we could just hook on the keydown event and detect whether user input a new character.
   private _handleNativeKeydown = (e: KeyboardEvent) => {
     // Only the length of character buttons is 1
-    if ((
-        e.key.length === 1 ||
-         e.key === 'Enter'
-      ) &&
+    if (
+      (e.key.length === 1 || e.key === 'Enter') &&
       window.getSelection()?.type === 'Range'
     ) {
       const range = getCurrentRange();
@@ -641,7 +640,7 @@ export class DefaultPageBlockComponent extends LitElement implements BlockHost {
       // remove, user don't have native selection
       window.removeEventListener('keydown', this._handleNativeKeydown);
     }
-  }
+  };
 
   firstUpdated() {
     this._bindHotkeys();
@@ -672,11 +671,11 @@ export class DefaultPageBlockComponent extends LitElement implements BlockHost {
 
     this.signals.nativeSelection.on(bind => {
       if (bind) {
-        window.addEventListener('keydown', this._handleNativeKeydown)
+        window.addEventListener('keydown', this._handleNativeKeydown);
       } else {
-        window.removeEventListener('keydown', this._handleNativeKeydown)
+        window.removeEventListener('keydown', this._handleNativeKeydown);
       }
-    })
+    });
 
     tryUpdateGroupSize(this.page, 1);
     this.addEventListener('keydown', e => {
