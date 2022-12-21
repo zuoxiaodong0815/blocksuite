@@ -7,6 +7,7 @@ import { Indexer, QueryContent } from './search.js';
 import type { Awareness } from 'y-protocols/awareness';
 import type { BaseBlockModel } from '../base.js';
 import { BlobStorage, getBlobStorage } from '../blob/index.js';
+import { YMultiDocUndoManager } from 'y-utility/y-multidoc-undomanager';
 
 export interface PageMeta {
   id: string;
@@ -207,6 +208,7 @@ export class Workspace {
   private _store: Store;
   private _indexer: Indexer;
   private _blobStorage: Promise<BlobStorage | null>;
+  private _history: YMultiDocUndoManager;
 
   meta: WorkspaceMeta;
 
@@ -230,6 +232,8 @@ export class Workspace {
       pageAdded: this.meta.pageAdded,
       pageRemoved: this.meta.pageRemoved,
     };
+
+    this._history = new YMultiDocUndoManager();
 
     this._handlePageEvent();
   }
@@ -287,11 +291,13 @@ export class Workspace {
         'space:' + pageMeta,
         subDoc,
         this._store.awareness,
+        this._history,
         this._store.idGenerator
       );
       this._store.addSpace(page);
       page.syncFromExistingDoc();
       this._indexer.onCreatePage(pageMeta);
+      this._history.clear();
     });
 
     this.signals.pageRemoved.on(id => {

@@ -9,7 +9,7 @@ import {
   createAutoIncrementIdGeneratorByClientId,
   uuidv4,
 } from './utils/id-generator.js';
-import { WebsocketProvider } from './websocket';
+import { WebsocketProvider } from './websocket/index.js';
 
 export interface SerializedStore {
   [key: string]: {

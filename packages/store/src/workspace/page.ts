@@ -21,6 +21,7 @@ import {
   matchFlavours,
 } from '../utils/utils.js';
 import type { PageMeta, Workspace } from './workspace.js';
+import type { YMultiDocUndoManager } from 'y-utility/y-multidoc-undomanager';
 
 export type YBlock = Y.Map<unknown>;
 export type YBlocks = Y.Map<YBlock>;
@@ -48,7 +49,7 @@ function createChildMap(yChildIds: Y.Array<string>) {
 export class Page extends Space {
   public workspace: Workspace;
   private _idGenerator: IdGenerator;
-  private _history!: Y.UndoManager;
+  private _history: YMultiDocUndoManager;
   private _root: BaseBlockModel | null = null;
   private _blockMap = new Map<string, BaseBlockModel>();
   private _splitSet = new Set<Text | PrelimText>();
@@ -72,10 +73,12 @@ export class Page extends Space {
     id: string,
     doc: Y.Doc,
     awareness: Awareness,
+    _history: YMultiDocUndoManager,
     idGenerator: IdGenerator = uuidv4
   ) {
     super(id, doc, awareness);
     this.workspace = workspace;
+    this._history = _history;
     this._idGenerator = idGenerator;
   }
 
@@ -356,10 +359,8 @@ export class Page extends Space {
     // _yBlocks.unobserveDeep(this._handleYEvents);
     _yBlocks.observeDeep(this._handleYEvents);
 
-    this._history = new Y.UndoManager([_yBlocks], {
-      trackedOrigins: new Set([this.doc.clientID]),
-      doc: this.doc,
-    });
+    this._history.addToScope(this._yBlocks);
+    this._history.addTrackedOrigin(this.doc.clientID);
 
     this._history.on('stack-cleared', this._historyObserver);
     this._history.on('stack-item-added', this._historyAddObserver);
