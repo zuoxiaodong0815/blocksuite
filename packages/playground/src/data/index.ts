@@ -25,7 +25,7 @@ export const heavy = (workspace: Workspace) => {
   workspace.createPage('page0');
 };
 
-export const basic = (workspace: Workspace) => {
+export const basic = (workspace: Workspace, pageId: string) => {
   workspace.signals.pageAdded.once(id => {
     const page = workspace.getPage(id) as Page;
     const pageBlockId = page.addBlock({ flavour: 'affine:page' });
@@ -34,5 +34,5 @@ export const basic = (workspace: Workspace) => {
     page.resetHistory();
   });
 
-  workspace.createPage('page0');
+  workspace.createPage(pageId || 'page0');
 };

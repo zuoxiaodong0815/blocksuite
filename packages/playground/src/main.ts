@@ -3,7 +3,7 @@ import '@blocksuite/editor';
 /** Uncomment this line if you are using BlockSuite in your own project */
 // import "@blocksuite/blocks/style";
 import { BlockSchema, createDebugMenu, createEditor } from '@blocksuite/editor';
-import { Page, Workspace, Utils } from '@blocksuite/store';
+import { Page, Workspace, Utils, uuidv4 } from '@blocksuite/store';
 import { getOptions, initParam, isBase64, isE2E } from './utils';
 import './style.css';
 
@@ -12,16 +12,78 @@ const options = getOptions();
 
 // Subscribe for page update and create editor after page loaded.
 function subscribePage(workspace: Workspace) {
-  workspace.signals.pageAdded.once(pageId => {
-    const page = workspace.getPage(pageId) as Page;
-    const editor = createEditor(page);
-    const debugMenu = createDebugMenu(workspace, editor);
-    document.body.appendChild(editor);
-    document.body.appendChild(debugMenu);
-    initButton.disabled = true;
+  workspace.signals.pageAdded.on(pageId => {
+    showPage(workspace, pageId);
+  });
+}
 
-    // @ts-ignore
-    [window.editor, window.page] = [editor, page];
+function showPage(workspace: Workspace, pageId: string) {
+  // @ts-ignore
+  // window.editor?.page.dispose();
+  // @ts-ignore
+  window.editor?.remove();
+  // @ts-ignore
+  window.debugMenu?.remove();
+
+  const page = workspace.getPage(pageId) as Page;
+  const editor = createEditor(page);
+  const debugMenu = createDebugMenu(workspace, editor);
+  document.body.appendChild(editor);
+  document.body.appendChild(debugMenu);
+  initButton.disabled = true;
+
+  // @ts-ignore
+  [window.editor, window.page, window.debugMenu] = [editor, page, debugMenu];
+}
+
+function refreshPageList(
+  workspace: Workspace,
+  initFunctions: Record<string, (workspace: Workspace, pageId: string) => void>
+) {
+  let options = '';
+  workspace.doc.getMap().forEach((value, key) => {
+    options += `<option value ="${key}">${key}</option>`;
+  });
+  const pageListEle = document.getElementById('page-list');
+  if (pageListEle) {
+    pageListEle.innerHTML = options;
+  }
+}
+
+function initPageMenu(
+  workspace: Workspace,
+  initFunctions: Record<string, (workspace: Workspace, pageId: string) => void>
+) {
+  const menuContainer = document.createElement('div');
+  menuContainer.style.position = 'fixed';
+  menuContainer.style.bottom = '10px';
+  menuContainer.style.left = '150px';
+  menuContainer.style.zIndex = '1000';
+  document.body.appendChild(menuContainer);
+
+  const titleContainer = document.createElement('button') as HTMLButtonElement;
+  titleContainer.textContent = 'addPage';
+  titleContainer.addEventListener('click', () => {
+    const pageId = uuidv4();
+    initFunctions.basic(workspace, pageId);
+  });
+  menuContainer.appendChild(titleContainer);
+
+  const selectContainer = document.createElement('select') as HTMLSelectElement;
+  selectContainer.setAttribute('id', 'page-list');
+  selectContainer.addEventListener('change', () => {
+    const pageId = selectContainer.value;
+    if (workspace.getPage(pageId)) {
+      showPage(workspace, pageId);
+    } else {
+      initFunctions.basic(workspace, pageId);
+    }
+  });
+  menuContainer.appendChild(selectContainer);
+
+  refreshPageList(workspace, initFunctions);
+  workspace.doc.on('subdocs', ({ added, removed, loaded }) => {
+    refreshPageList(workspace, initFunctions);
   });
 }
 
@@ -38,7 +100,7 @@ async function main() {
 
   const initFunctions = (await import('./data')) as Record<
     string,
-    (workspace: Workspace) => void
+    (workspace: Workspace, pageId: string) => void
   >;
   initButton.addEventListener('click', () => initFunctions.basic(workspace));
 
@@ -54,6 +116,8 @@ async function main() {
       }
     }
   }
+
+  initPageMenu(workspace, initFunctions);
 }
 
 main();
