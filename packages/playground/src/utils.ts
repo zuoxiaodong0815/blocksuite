@@ -4,6 +4,7 @@ import {
   Generator,
   IndexedDBDocProvider,
   StoreOptions,
+  createWebsocketDocProvider,
 } from '@blocksuite/store';
 
 const params = new URLSearchParams(location.search);
@@ -42,9 +43,10 @@ export function getOptions(): Pick<
         forceUUIDv4 = true;
         break;
       case 'websocket': {
-        console.warn(
-          'Websocket provider is not maintained in BlockSuite currently.'
-        );
+        providers.push(createWebsocketDocProvider('ws://127.0.0.1:1234'));
+        // console.warn(
+        //   'Websocket provider is not maintained in BlockSuite currently.'
+        // );
         break;
       }
       default:

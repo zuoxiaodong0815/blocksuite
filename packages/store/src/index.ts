@@ -2,6 +2,7 @@ export * from './space.js';
 export * from './store.js';
 export * from './base.js';
 export * from './awareness.js';
+export * from './websocket/index.js';
 export * from './blob/index.js';
 export * from './text-adapter.js';
 export * from './utils/signal.js';
