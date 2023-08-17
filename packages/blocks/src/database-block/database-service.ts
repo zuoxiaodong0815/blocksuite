@@ -5,7 +5,10 @@ import { type BaseBlockModel, type Page } from '@blocksuite/store';
 import { getService } from '../__internal__/service/index.js';
 import { BaseService } from '../__internal__/service/service.js';
 import type { BlockModels } from '../__internal__/utils/model.js';
-import type { SerializedBlock } from '../__internal__/utils/types.js';
+import type {
+  BlockTransformContext,
+  SerializedBlock,
+} from '../__internal__/utils/types.js';
 import type { DataViewDataType, DataViewTypes } from './common/data-view.js';
 import { DatabaseSelection } from './common/selection.js';
 import type { DatabaseBlockModel } from './database-model.js';
@@ -89,6 +92,77 @@ export class LegacyDatabaseBlockService extends BaseService<DatabaseBlockModel> 
     views.forEach(view => {
       model.addView(view.mode);
     });
+  }
+
+  override async block2html(
+    block: BlockModels['affine:database'],
+    { childText = '', begin, end }: BlockTransformContext = {},
+    blobMap?: Map<string, string>
+  ): Promise<string> {
+    // const rows = block.children.map(v => v.id);
+    // const view = block.views;;
+    // const columns = view.columns;
+    // // const columns = block.columns;
+    // columns.map(column => {
+    //   const { id, name } = column;
+    //   column.getValue
+    // });
+
+    // const dd = rows.map(row => {
+    //   const cells = block.cells[row];
+    //   columns.map(column => {
+    //     const cell = cells[column.id];
+    //     if (cell) {
+    //       const value = cell.value;
+    //       if (value) {
+    //         const text = value.toString();
+    //         if (text) {
+    //           childText += text;
+    //         }
+    //       }
+    //     }
+    //   });
+    // });
+
+    const text = `
+<div id="0b55370f-1b24-4124-9d6f-725ce7ea296f" class="collection-content">
+	<h4 class="collection-title">${block.title.toString()}</h4>
+	<table class="collection-content">
+		<thead>
+			<tr>
+        ${block.columns
+          .map(column => {
+            return `<th>${column.name}</th>
+          <th>`;
+          })
+          .join('\n')}
+			</tr>
+		</thead>
+		<tbody>
+			<tr id="8d053be7-05c3-4a8e-a49a-9c99b1d57741">
+				<td class="cell-title"><a
+						href="https://www.notion.so/aaa-8d053be705c34a8ea49a9c99b1d57741?pvs=21">aaa</a></td>
+				<td class="cell"><span class="selected-value select-value-color-default">bbbb</span><span
+						class="selected-value select-value-color-yellow">bbbbkj</span></td>
+				<td class="cell"></td>
+			</tr>
+			<tr id="763d7f97-9940-4f71-a956-314ae9adba67">
+				<td class="cell-title"><a
+						href="https://www.notion.so/ccccc-763d7f9799404f71a956314ae9adba67?pvs=21">ccccc</a></td>
+				<td class="cell"></td>
+				<td class="cell"></td>
+			</tr>
+			<tr id="85fdc7c7-3e89-4c3a-8aa9-86341f43c280">
+				<td class="cell-title"><a
+						href="https://www.notion.so/85fdc7c73e894c3a8aa986341f43c280?pvs=21">Untitled</a></td>
+				<td class="cell"></td>
+				<td class="cell"></td>
+			</tr>
+		</tbody>
+	</table><br><br>
+</div>
+    `;
+    return `${text}`;
   }
 }
 
